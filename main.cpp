@@ -1,19 +1,51 @@
+#include <cstdint>
+#include <fstream>
 #include <iostream>
+#include <optional>
+#include <sstream>
+#include <string>
+
 #include "Cache.h"
-#include <vector>
+#include <unordered_set>
 
 int main() {
-    uint32_t C = 15, B=15, S=0;
-    Cache l2 {C+1, B, S, std::nullopt};
-    Cache l1 {C, B, S, l2};
-
-    std::vector<uint32_t> s {0x1000000, 0x2000000, 0x1000000};
-    std::vector<uint32_t> r {0, 0, 1};
-
-    for (int x = 0; x<s.size(); x++) {
-        l1.cache_access(s[x], r[x]);
+    std::unordered_set<int64_t> uset {};
+    std::ifstream input("/home/pranavponnusamy/CLionProjects/CacheSim/mcf");
+    if (!input) {
+        std::cerr << "Failed to open trace file\n";
+        return 1;
     }
 
-    return 0;
+    uint64_t C = 15, B = 6, S = 0;
+    Cache l2{C, B, S, std::nullopt};
+    Cache l1{17, B, 3, l2};
 
+    std::string line{};
+    while (std::getline(input, line)) {
+        if (line.empty()) {
+            continue;
+        }
+
+        std::istringstream iss(line);
+
+        char access{};
+        uint64_t addr{};
+
+        if (!(iss >> access >> std::hex >> addr)) {
+            std::cerr << line << '\n';
+            continue;
+        }
+
+        if (access == 'R') {
+            l1.cache_access(addr, false, true);  // read
+        } else if (access == 'W') {
+            l1.cache_access(addr, true, true);   // write
+        }
+        uset.insert(addr);
+
+
+    }
+
+    std::cout << uset.size() << std::endl;
+    return 0;
 }
