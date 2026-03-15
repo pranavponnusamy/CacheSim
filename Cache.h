@@ -1,16 +1,14 @@
-//
-// Created by pranavponnusamy on 3/13/26.
-//
-
 #ifndef CACHESIM_CACHE_H
 #define CACHESIM_CACHE_H
 #include <cstdint>
+#include <deque>
 #include <vector>
 #include <optional>
+#include <algorithm>
 
 class Cache {
 
-    enum Policy {
+    enum Write_Policy {
         WBWA,
         WTWNA
     };
@@ -18,7 +16,7 @@ class Cache {
     enum Eviction_Policy {
         FIFO,
         LRU,
-        MRU
+        MFU
     };
 
     struct Stats {
@@ -31,8 +29,15 @@ class Cache {
 
     struct Entry {
         uint32_t tag {};
-        bool valid {false};
+        // bool valid {false};
         bool dirty {false};
+        uint32_t counter {};
+    };
+
+    struct Split {
+        uint32_t tag;
+        uint32_t index;
+        uint32_t block_offset;
     };
 
 public:
@@ -50,14 +55,24 @@ public:
 
     Stats stats {};
 
-    using set = std::vector<Entry>;
-    std::vector<set> sets;
+    using Set = std::deque<Entry>;
+    std::vector<Set> sets;
 
-    Cache(uint32_t C, uint32_t B, uint32_t S): m_C{C}, m_B{B}, m_S{S}, m_num_ways{1U<<S}, m_num_sets{1U << (C-B-S)}{
-        sets = std::vector<set>(m_num_sets, set(m_num_ways));
+    Eviction_Policy eviction_policy {};
+    Write_Policy write_policy{WBWA};
+    const std::optional<std::reference_wrapper<Cache>> m_upper_level;
+
+    Cache(uint32_t C, uint32_t B, uint32_t S, std::optional<std::reference_wrapper<Cache>> upper_level): m_C{C}, m_B{B}, m_S{S}, m_num_ways{1U << (C-B-S)}, m_num_sets{1U<<S}, m_upper_level(upper_level){
+     sets = std::vector<Set>(m_num_sets, Set(0));
     }
-    Entry cache_access(uint32_t mem_address,  bool RW, std::optional<std::reference_wrapper<Cache>> upper_level);
 
+    Split split_address (const uint32_t mem_address) const;
+
+    Entry cache_access(uint32_t mem_address, bool RW);
+
+    void write_back(Entry &victim, bool RW, uint32_t mem_address);
+
+    void cache_repair(Entry new_entry, bool RW, uint32_t mem_address) ;
 };
 
 #endif //CACHESIM_CACHE_H
