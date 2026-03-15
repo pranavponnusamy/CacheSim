@@ -66,13 +66,13 @@ public:
      sets = std::vector<Set>(m_num_sets, Set(0));
     }
 
-    Split split_address (const uint32_t mem_address) const;
+    Split split_address (uint32_t mem_address) const;
 
-    Entry cache_access(uint32_t mem_address, bool RW);
+    Entry cache_access(uint32_t mem_address, bool RW, bool update = true);
 
     void write_back(Entry &victim, bool RW, uint32_t mem_address);
 
-    void cache_repair(Entry new_entry, bool RW, uint32_t mem_address) ;
+    void cache_repair(Entry &new_entry, bool RW, uint32_t mem_address) ;
 };
 
 #endif //CACHESIM_CACHE_H

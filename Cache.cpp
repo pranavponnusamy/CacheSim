@@ -9,7 +9,7 @@ Cache::Split Cache::split_address(uint32_t mem_address) const {
 }
 
 
-Cache::Entry Cache::cache_access(const uint32_t mem_address, const bool RW) {
+Cache::Entry Cache::cache_access(const uint32_t mem_address, const bool RW, bool update) {
     Split split = split_address(mem_address);
 
     if (RW) {
@@ -42,18 +42,20 @@ Cache::Entry Cache::cache_access(const uint32_t mem_address, const bool RW) {
     }
 
     //miss
-    ++stats.misses;
-    Entry e = Entry{split.tag, false, 0};
-    if (m_upper_level.has_value()) {
-        auto &upper_level_cache = m_upper_level.value().get();
-        e = upper_level_cache.cache_access(mem_address, RW);
-    }
+    if (!update) {
+        ++stats.misses;
+        Entry e = Entry{split.tag, false, 0};
+        if (m_upper_level.has_value()) {
+            auto &upper_level_cache = m_upper_level.value().get();
+            e = upper_level_cache.cache_access(mem_address, RW);
+        }
 
-    cache_repair(e, RW, mem_address);
-    return e; // went all the way to memory
+        cache_repair(e, RW, mem_address);
+        return e; // went all the way to memory
+    }
 }
 
-void Cache::write_back(Entry &victim, bool RW, uint32_t mem_address) {
+void Cache::write_back(Entry &victim, const bool RW, const uint32_t mem_address) {
     Split split = split_address(mem_address);
 
     // write back/write through
@@ -85,7 +87,7 @@ void Cache::write_back(Entry &victim, bool RW, uint32_t mem_address) {
             break;
 
         case WTWNA:
-            if (idx != -1) {
+            if (upper_level_cache != nullptr) {
                 // update if it's already in the cache
                 // upper_level_cache->write_back(victim, RW, mem_address);
                 upper_level_cache->cache_access(mem_address, RW);
@@ -94,7 +96,7 @@ void Cache::write_back(Entry &victim, bool RW, uint32_t mem_address) {
     }
 }
 
-void Cache::cache_repair(Entry new_entry, bool RW, uint32_t mem_address) {
+void Cache::cache_repair(Entry& new_entry, const bool RW, const uint32_t mem_address) {
     Split split = split_address(mem_address);
     Set& s = sets[split.index];
 
