@@ -19,6 +19,12 @@ class Cache {
         MFU
     };
 
+    enum Prefetch_Policy {
+        PLUS_ONE,
+        STRIDED,
+        MARKOV
+    };
+
     struct Stats {
         uint32_t reads {};
         uint32_t writes {};
@@ -59,7 +65,7 @@ public:
     std::vector<Set> sets;
 
     Eviction_Policy eviction_policy {};
-    Write_Policy write_policy{WBWA};
+    Write_Policy write_policy{WTWNA};
     const std::optional<std::reference_wrapper<Cache>> m_upper_level;
 
     Cache(uint32_t C, uint32_t B, uint32_t S, std::optional<std::reference_wrapper<Cache>> upper_level): m_C{C}, m_B{B}, m_S{S}, m_num_ways{1U << (C-B-S)}, m_num_sets{1U<<S}, m_upper_level(upper_level){
@@ -68,7 +74,7 @@ public:
 
     Split split_address (uint32_t mem_address) const;
 
-    Entry cache_access(uint32_t mem_address, bool RW, bool update = true);
+    Entry cache_access(uint32_t mem_address, bool RW);
 
     void write_back(Entry &victim, bool RW, uint32_t mem_address);
 
