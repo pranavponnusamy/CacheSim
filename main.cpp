@@ -10,17 +10,18 @@
 
 int main() {
     std::unordered_set<int64_t> uset {};
-    std::ifstream input("/home/pranavponnusamy/CLionProjects/CacheSim/mcf");
+    std::ifstream input("/home/pranavponnusamy/CLionProjects/CacheSim/short_linpack.trace");
     if (!input) {
         std::cerr << "Failed to open trace file\n";
         return 1;
     }
 
-    uint64_t C = 15, B = 6, S = 0;
-    Cache l2{C, B, S, std::nullopt};
-    Cache l1{17, B, 3, l2};
+    uint64_t C = 15, B = 7, S = 0;
+    Cache l2{15, 7, 1, std::nullopt};
+    Cache l1{15, 7, 0, l2};
 
     std::string line{};
+    int counter = 0;
     while (std::getline(input, line)) {
         if (line.empty()) {
             continue;
@@ -41,11 +42,11 @@ int main() {
         } else if (access == 'W') {
             l1.cache_access(addr, true, true);   // write
         }
-        uset.insert(addr);
-
-
+        // uset.insert(addr);
     }
 
-    std::cout << uset.size() << std::endl;
+    // std::cout << uset.size() << std::endl;
+    std::cout << l1.stats.misses << std::endl;
+    std::cout << l2.stats.misses << std::endl;
     return 0;
 }

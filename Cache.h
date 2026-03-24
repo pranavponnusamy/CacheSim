@@ -16,7 +16,7 @@ class Cache {
     enum Eviction_Policy {
         FIFO,
         LRU,
-        MFU
+        LFU
     };
 
     enum Prefetch_Policy {
@@ -63,8 +63,8 @@ public:
     using Set = std::deque<Entry>;
     std::vector<Set> sets;
 
-    Eviction_Policy eviction_policy {};
-    Write_Policy write_policy{WTWNA};
+    Eviction_Policy eviction_policy {LRU};
+    Write_Policy write_policy{WBWA};
     Prefetch_Policy prefetch_policy{STRIDED};
     const std::optional<std::reference_wrapper<Cache>> m_upper_level;
 
