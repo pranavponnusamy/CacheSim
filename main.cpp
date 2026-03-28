@@ -10,15 +10,18 @@
 
 int main() {
     std::unordered_set<int64_t> uset {};
-    std::ifstream input("/home/pranavponnusamy/CLionProjects/CacheSim/short_linpack.trace");
+    std::ifstream input("/Users/pranavponnsamy/CLionProjects/CacheSim/short_linpack.trace");
     if (!input) {
         std::cerr << "Failed to open trace file\n";
         return 1;
     }
 
     uint64_t C = 15, B = 7, S = 0;
-    Cache l2{15, 7, 1, std::nullopt};
+    Cache l2{17, 7, 1, std::nullopt};
     Cache l1{15, 7, 0, l2};
+
+    l1.replacer = new LRU();
+    l2.replacer = new LRU();
 
     std::string line{};
     int counter = 0;

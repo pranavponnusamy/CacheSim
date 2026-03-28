@@ -23,7 +23,7 @@ void Cache::do_prefetch(uint64_t mem_address) {
   }
 }
 
-Cache::Entry Cache::cache_access(const uint64_t mem_address, const bool RW,
+Entry Cache::cache_access(const uint64_t mem_address, const bool RW,
                                  const bool prefetch) {
   Split split = split_address(mem_address);
 
@@ -50,30 +50,9 @@ Cache::Entry Cache::cache_access(const uint64_t mem_address, const bool RW,
       } else {
         ++stats.reads;
         ++stats.hits;
-        if (eviction_policy == LFU) {
-          entry.counter++;
-        }
       }
 
-      switch (eviction_policy) {
-      case LRU:
-        sets[split.index].erase(it); // linear scan is expensive
-        sets[split.index].push_back(entry);
-        break;
-
-      case LFU:
-        *it = entry;
-        std::ranges::sort(sets[split.index],
-                          [](const Entry &a, const Entry &b) {
-                            return a.counter > b.counter;
-                          });
-        break;
-
-      default:
-        *it = entry;
-        break;
-      }
-
+      replacer->access(sets[split.index], split.tag);
       return entry;
     }
   }
@@ -153,8 +132,7 @@ void Cache::cache_repair(Entry &new_entry, const bool RW,
 
   // evict an entry
   if (s.size() == m_num_ways) {
-    Entry victim = s[0];
-    s.pop_front();
+    Entry victim = replacer->evict(s);
 
     uint64_t victim_address{(victim.tag << (m_C - m_S)) | (split.index << m_B)};
 
@@ -165,20 +143,5 @@ void Cache::cache_repair(Entry &new_entry, const bool RW,
     }
   }
 
-  // add new_entry
-  switch (eviction_policy) {
-  case LRU:
-    s.push_back(new_entry);
-    break;
-  case FIFO:
-    s.push_back(new_entry);
-    break;
-  case LFU:
-    ++new_entry.counter;
-    s.push_back(new_entry);
-    std::ranges::sort(s, [](const Entry &a, const Entry &b) {
-      return a.counter > b.counter;
-    });
-    break;
-  }
+  replacer->insert(s, split.tag);
 }

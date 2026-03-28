@@ -5,6 +5,10 @@
 #include <vector>
 #include <optional>
 #include <algorithm>
+#include <CacheTypes.h>
+#include <Replacement_Policiy.h>
+
+class Replacement_Policy;
 
 class Cache {
 
@@ -29,14 +33,7 @@ class Cache {
         uint64_t writes {};
 
         uint64_t hits {};
-        int32_t misses {};
-    };
-
-    struct Entry {
-        uint64_t tag {};
-        // bool valid {false};
-        bool dirty {false};
-        uint64_t counter {};
+        int64_t misses {};
     };
 
     struct Split {
@@ -46,6 +43,7 @@ class Cache {
     };
 
 public:
+    Replacement_Policy* replacer;
 
     // C = 2^C total cache capacity (bytes)
     // B = 2^B block size (bytes)
@@ -60,8 +58,8 @@ public:
 
     Stats stats {};
 
-    using Set = std::deque<Entry>;
     std::vector<Set> sets;
+
 
     Eviction_Policy eviction_policy {LRU};
     Write_Policy write_policy{WBWA};
@@ -84,6 +82,8 @@ public:
     void write_back(Entry &victim, bool RW, uint64_t mem_address);
 
     void cache_repair(Entry &new_entry, bool RW, uint64_t mem_address) ;
+
+    friend Replacement_Policy;
 };
 
 #endif //CACHESIM_CACHE_H
