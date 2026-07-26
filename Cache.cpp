@@ -24,14 +24,13 @@ void Cache::do_prefetch(uint64_t mem_address) {
 }
 
 Entry Cache::cache_access(const uint64_t mem_address, const bool RW,
-                                 const bool prefetch) {
+                          const bool prefetch) {
   Split split = split_address(mem_address);
 
   // hit
   for (auto it = sets[split.index].begin(); it != sets[split.index].end();
        ++it) {
     if (it->tag == split.tag) {
-      Entry entry = *it;
       if (RW) {
         switch (write_policy) {
         case WTWNA:
@@ -44,7 +43,7 @@ Entry Cache::cache_access(const uint64_t mem_address, const bool RW,
         case WBWA:
           stats.writes++;
           stats.hits++;
-          entry.dirty = true;
+          it->dirty = true; // FIX: Update the actual entry in the cache
           break;
         }
       } else {
@@ -52,7 +51,8 @@ Entry Cache::cache_access(const uint64_t mem_address, const bool RW,
         ++stats.hits;
       }
 
-      replacer->access(sets[split.index], split.tag);
+      Entry entry = *it;
+      replacer->access(sets[split.index], split.tag, split.index);
       return entry;
     }
   }
@@ -132,7 +132,7 @@ void Cache::cache_repair(Entry &new_entry, const bool RW,
 
   // evict an entry
   if (s.size() == m_num_ways) {
-    Entry victim = replacer->evict(s);
+    Entry victim = replacer->evict(s, split.index);
 
     uint64_t victim_address{(victim.tag << (m_C - m_S)) | (split.index << m_B)};
 
@@ -143,5 +143,5 @@ void Cache::cache_repair(Entry &new_entry, const bool RW,
     }
   }
 
-  replacer->insert(s, split.tag);
+  replacer->insert(s, new_entry, split.index);
 }

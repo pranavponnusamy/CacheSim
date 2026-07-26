@@ -9,19 +9,27 @@
 #include <unordered_set>
 
 int main() {
+    uint64_t init_val = 0;
+    //
+    for (int x = 8; x>0; x/=2) {
+        init_val |= (1 << (x-1));
+    }
+
+    // std::cout << init_val ;
+
     std::unordered_set<int64_t> uset {};
-    std::ifstream input("/Users/pranavponnsamy/CLionProjects/CacheSim/short_linpack.trace");
+    std::ifstream input("/Users/pranavponnusamy/CLionProjects/CacheSim/short_linpack.trace");
     if (!input) {
         std::cerr << "Failed to open trace file\n";
         return 1;
     }
 
     uint64_t C = 15, B = 7, S = 0;
-    Cache l2{17, 7, 1, std::nullopt};
-    Cache l1{15, 7, 0, l2};
+    Cache l2{17, 7, 1, Cache::FIFO , std::nullopt};
+    Cache l1{15, 8, 0,Cache::FIFO,  l2};
 
-    l1.replacer = new LRU();
-    l2.replacer = new LRU();
+    // l1.replacer = new FIFO();
+    // l2.replacer = new FIFO();
 
     std::string line{};
     int counter = 0;
