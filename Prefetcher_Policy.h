@@ -27,9 +27,6 @@ public:
     void update_config(int prefetch_stride, int prefetch_degree);
 };
 
-// Learns first-order address transitions (block[i] -> block[i+1]) and
-// prefetches the most frequently observed successor blocks of the current
-// access.
 class Markov_Prefetcher: public Prefetcher {
 private:
     std::unordered_map<uint64_t, std::unordered_map<uint64_t, uint64_t>> transitions;

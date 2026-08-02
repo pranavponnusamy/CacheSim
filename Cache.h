@@ -158,8 +158,6 @@ public:
     void cache_repair(Entry &new_entry, bool RW, uint64_t mem_address,
                       bool prefetch = false);
 
-    // Drive this cache from a trace file. Each line is "<R|W> <hex_addr>".
-    // Lines that fail to parse are skipped (with a diagnostic to stderr).
     void run(const std::string& trace_path);
 
     friend Replacement_Policy;

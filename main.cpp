@@ -33,8 +33,6 @@ int main() {
     for (const auto& [eviction_policy, eviction_name] : eviction_policies) {
         for (const auto& [prefetch_policy, prefetch_name] : prefetch_policies) {
             for (const auto& [admission_policy, admission_name] : admission_policies) {
-                // L1: 16KB, 64B blocks, 4-way. L2: 256KB, 64B blocks, 8-way.
-                // Matching block sizes across levels mirrors real hierarchies.
                 Cache l2{18, 6, 3, eviction_policy, prefetch_policy,
                           std::nullopt, &trace, admission_policy};
                 Cache l1{14, 6, 2, eviction_policy, prefetch_policy,
