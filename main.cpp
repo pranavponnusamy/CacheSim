@@ -1,63 +1,57 @@
-#include <cstdint>
-#include <fstream>
 #include <iostream>
-#include <optional>
-#include <sstream>
 #include <string>
+#include <vector>
 
 #include "Cache.h"
-#include <unordered_set>
+#include "Trace.h"
 
 int main() {
-    uint64_t init_val = 0;
-    //
-    for (int x = 8; x>0; x/=2) {
-        init_val |= (1 << (x-1));
+    const std::string trace_path{
+    "/Users/pranavponnusamy/CLionProjects/CacheSim/short_linpack.trace"};
+
+    Trace trace{trace_path};
+
+    const std::vector<std::pair<Cache::Eviction_Policy, std::string>> eviction_policies{
+        {Cache::FIFO, "FIFO"},
+        {Cache::LRU, "LRU"},
+        {Cache::LFU, "LFU"},
+        {Cache::PLRU, "PLRU"},
+        {Cache::Belady, "Belady"}
+    };
+    const std::vector<std::pair<Cache::Prefetch_Policy, std::string>> prefetch_policies{
+        {Cache::STRIDED, "STRIDED"},
+        {Cache::MARKOV, "MARKOV"}
+    };
+    const std::vector<std::pair<Cache::Admission_Policy, std::string>> admission_policies{
+        {Cache::ADMIT_ALL, "ADMIT_ALL"},
+        {Cache::REJECT_PREFETCH, "REJECT_PREFETCH"},
+        {Cache::TINYLFU, "TINYLFU"}
+    };
+
+    std::cout << "eviction,prefetch,admission,l1_misses,l2_misses,l1_hits,l2_hits\n";
+
+    for (const auto& [eviction_policy, eviction_name] : eviction_policies) {
+        for (const auto& [prefetch_policy, prefetch_name] : prefetch_policies) {
+            for (const auto& [admission_policy, admission_name] : admission_policies) {
+                // L1: 16KB, 64B blocks, 4-way. L2: 256KB, 64B blocks, 8-way.
+                // Matching block sizes across levels mirrors real hierarchies.
+                Cache l2{18, 6, 3, eviction_policy, prefetch_policy,
+                          std::nullopt, &trace, admission_policy};
+                Cache l1{14, 6, 2, eviction_policy, prefetch_policy,
+                          l2, &trace, admission_policy};
+
+                l1.run(trace_path);
+
+                std::cout << eviction_name << ','
+                          << prefetch_name << ','
+                          << admission_name << ','
+                          << l1.stats.misses << ','
+                          << l2.stats.misses << ','
+                          << l1.stats.hits << ','
+                          << l2.stats.hits << '\n';
+            }
+        }
     }
 
-    // std::cout << init_val ;
-
-    std::unordered_set<int64_t> uset {};
-    std::ifstream input("/Users/pranavponnusamy/CLionProjects/CacheSim/short_linpack.trace");
-    if (!input) {
-        std::cerr << "Failed to open trace file\n";
-        return 1;
-    }
-
-    uint64_t C = 15, B = 7, S = 0;
-    Cache l2{17, 7, 1, Cache::FIFO , std::nullopt};
-    Cache l1{15, 8, 0,Cache::FIFO,  l2};
-
-    // l1.replacer = new FIFO();
-    // l2.replacer = new FIFO();
-
-    std::string line{};
-    int counter = 0;
-    while (std::getline(input, line)) {
-        if (line.empty()) {
-            continue;
-        }
-
-        std::istringstream iss(line);
-
-        char access{};
-        uint64_t addr{};
-
-        if (!(iss >> access >> std::hex >> addr)) {
-            std::cerr << line << '\n';
-            continue;
-        }
-
-        if (access == 'R') {
-            l1.cache_access(addr, false, true);  // read
-        } else if (access == 'W') {
-            l1.cache_access(addr, true, true);   // write
-        }
-        // uset.insert(addr);
-    }
-
-    // std::cout << uset.size() << std::endl;
-    std::cout << l1.stats.misses << std::endl;
-    std::cout << l2.stats.misses << std::endl;
     return 0;
 }

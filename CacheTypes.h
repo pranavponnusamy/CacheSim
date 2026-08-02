@@ -5,6 +5,7 @@
 #include <deque>
 
 struct Entry {
+    uint64_t addr {};
     uint64_t tag {};
     uint64_t counter {};
     bool dirty {false};
